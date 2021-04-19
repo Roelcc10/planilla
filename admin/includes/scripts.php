@@ -81,6 +81,12 @@ $(function(){
     autoclose: true,
     format: 'yyyy-mm-dd'
   })
+
+   $('#datepicker_festive').datepicker({
+    autoclose: true,
+    format: 'yyyy-mm-dd'
+  })
+
   $('#datepicker_edit').datepicker({
     autoclose: true,
     format: 'yyyy-mm-dd'

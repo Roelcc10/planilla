@@ -67,7 +67,7 @@
           	</div>
           	<div class="modal-body">
             	<form class="form-horizontal" method="POST" action="overtime_edit.php">
-            		<input type="hidden" class="otid" name="id">
+            		<input type="hidden" class="otid" name="otid">
                 <div class="form-group">
                     <label for="datepicker_edit" class="col-sm-3 control-label">Date</label>
 
@@ -98,6 +98,20 @@
                       <input type="text" class="form-control" id="rate_edit" name="rate" required>
                     </div>
                 </div>
+                <div class="modal-body">
+              <form class="form-horizontal" method="POST" action="cashadvance_edit.php">
+                <input type="hidden" class="caid" name="id">
+                <div class="form-group">
+                    <label for="aprobar" class="col-sm-3 control-label">Aprobar?</label>
+
+                    <div class="col-sm-9">
+                      <select class="form-control" name="aprobar" id="aprobar">
+                        <option value="0">NO</option>
+                        <option value="1">SI</option>
+                      </select>
+                    </div>
+                </div>
+            </div>
           	</div>
           	<div class="modal-footer">
             	<button type="button" class="btn btn-default btn-flat pull-left" data-dismiss="modal"><i class="fa fa-close"></i> Close</button>

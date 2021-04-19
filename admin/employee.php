@@ -87,9 +87,9 @@
           </div>
         </div>
       </div>
-    </section>   
+    </section>
   </div>
-    
+
   <?php include 'includes/footer.php'; ?>
   <?php include 'includes/employee_modal.php'; ?>
 </div>
@@ -100,7 +100,15 @@ $(function(){
     e.preventDefault();
     $('#edit').modal('show');
     var id = $(this).data('id');
-    getRow(id);
+    // getRow(id);
+    $.ajax({
+      type: 'POST',
+      url: 'employee_row.php',
+      data: {id:id},
+      success: function(response){
+        $('#formedit').html(response);
+      }
+    });
   });
 
   $('.delete').click(function(e){
@@ -119,10 +127,10 @@ $(function(){
 });
 
 function getRow(id){
-  
+
   $.ajax({
     type: 'POST',
-    url: 'employee_row.php',
+    url: 'employee_data.php',
     data: {id:id},
     dataType: 'json',
     success: function(response){
@@ -138,6 +146,7 @@ function getRow(id){
       $('#gender_val').val(response.gender).html(response.gender);
       $('#position_val').val(response.position_id).html(response.description);
       $('#schedule_val').val(response.schedule_id).html(response.time_in+' - '+response.time_out);
+
     }
   });
 }

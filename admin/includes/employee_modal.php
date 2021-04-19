@@ -33,7 +33,7 @@
                 <div class="form-group">
                   	<label for="datepicker_add" class="col-sm-3 control-label">Cumpleaños</label>
 
-                  	<div class="col-sm-9"> 
+                  	<div class="col-sm-9">
                       <div class="date">
                         <input type="text" class="form-control" id="datepicker_add" name="birthdate">
                       </div>
@@ -49,7 +49,7 @@
                 <div class="form-group">
                     <label for="gender" class="col-sm-3 control-label">Genero</label>
 
-                    <div class="col-sm-9"> 
+                    <div class="col-sm-9">
                       <select class="form-control" name="gender" id="gender" required>
                         <option value="" selected>- Select -</option>
                         <option value="Male">Mascualino</option>
@@ -93,16 +93,91 @@
                       </select>
                     </div>
                 </div>
+
+                <div class="form-group">
+                <label for="edit_weeSchedule" class="col-sm-3 control-label">Horario de Trabajo</label>
+
+                <div class="col-sm-9">
+                  <table style="width: 100%; text-align: center;">
+                    <tr>
+                      <?php
+                        $days = "SELECT * FROM days";
+                        $days = $conn->query($days);
+                        while($daysss = $days->fetch_assoc()){
+                          echo "
+                              <th>
+                                 {$daysss['name']}
+                              </th>
+                          ";
+
+                        }
+                      ?>
+                    </tr>
+                    <tbody>
+                      <tr>
+                        <?php
+                          $checks = "SELECT * FROM days";
+                          $checks = $conn->query($checks);
+                          while($checksday = $checks->fetch_assoc()){
+                          echo "
+                             <td>
+                              <input type='checkbox' value='{$checksday['id']}'>  <br>
+                              <select name='Horario[]'>
+                                              <option selected value='{$checksday['name']}-0'>0</option>
+                                <option value='{$checksday['name']}-1'>1</option>
+                                <option value='{$checksday['name']}-2'>2</option>
+                                <option value='{$checksday['name']}-3'>3</option>
+                                <option value='{$checksday['name']}-4'>4</option>
+                                <option value='{$checksday['name']}-5'>5</option>
+                                <option value='{$checksday['name']}-6'>6</option>
+                                <option value='{$checksday['name']}-7'>7</option>
+                                <option value='{$checksday['name']}-8'>8</option>
+                                <option value='{$checksday['name']}-9'>9</option>
+                              </select>
+                            </td>
+                          ";
+
+                        }
+                        ?>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
                 <div class="form-group">
                     <label for="schedule" class="col-sm-3 control-label">Empresa</label>
 
                     <div class="col-sm-9">
                       <select class="form-control" id="schedule" name="schedule" required>
                         <option value="" selected>- Select -</option>
-                        <option value="value1">First</option>
-                        <option value="value2" selected>Solutions</option>
-                        <option value="value2" selected>Bussiness</option>
-  
+
+                        <?php
+                          $empresas = "SELECT * FROM empresas";
+                          $empresa = $conn->query($empresas);
+
+                          while($rowEmp = $empresa->fetch_assoc()) {
+
+                            echo " <option value='".$rowEmp['id']."'>".$rowEmp['nombre']."</option>";
+                          }
+                        ?>
+                      </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="afp" class="col-sm-3 control-label">AFP</label>
+
+                    <div class="col-sm-9">
+                      <select class="form-control" id="afp" name="afp" required>
+                        <option value="" selected>- Select -</option>
+                        <?php
+                          $sql = "SELECT * FROM afp";
+                          $query = $conn->query($sql);
+                          while($srow = $query->fetch_assoc()){
+                            echo "
+                              <option value='".$srow['id']."'>".$srow['name']."</option>
+                            ";
+                          }
+                        ?>
                       </select>
                     </div>
                 </div>
@@ -133,92 +208,11 @@
             	<h4 class="modal-title"><b><span class="employee_id"></span></b></h4>
           	</div>
           	<div class="modal-body">
-            	<form class="form-horizontal" method="POST" action="employee_edit.php">
-            		<input type="hidden" class="empid" name="id">
-                <div class="form-group">
-                    <label for="edit_firstname" class="col-sm-3 control-label">Nombre</label>
+            	<form class="form-horizontal" method="POST" action="employee_edit.php" >
+                <div id="formedit">
 
-                    <div class="col-sm-9">
-                      <input type="text" class="form-control" id="edit_firstname" name="firstname">
-                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="edit_lastname" class="col-sm-3 control-label">Apellido</label>
 
-                    <div class="col-sm-9">
-                      <input type="text" class="form-control" id="edit_lastname" name="lastname">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="edit_address" class="col-sm-3 control-label">Dirección</label>
-
-                    <div class="col-sm-9">
-                      <textarea class="form-control" name="address" id="edit_address"></textarea>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="datepicker_edit" class="col-sm-3 control-label">Cumpleaños</label>
-
-                    <div class="col-sm-9"> 
-                      <div class="date">
-                        <input type="text" class="form-control" id="datepicker_edit" name="birthdate">
-                      </div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="edit_contact" class="col-sm-3 control-label">Información de contacto</label>
-
-                    <div class="col-sm-9">
-                      <input type="text" class="form-control" id="edit_contact" name="contact">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="edit_gender" class="col-sm-3 control-label">Genero</label>
-
-                    <div class="col-sm-9"> 
-                      <select class="form-control" name="gender" id="edit_gender">
-                        <option selected id="gender_val"></option>
-                        <option value="Male">Masculino</option>
-                        <option value="Female">Femenino</option>
-                      </select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="edit_position" class="col-sm-3 control-label">Cargo</label>
-
-                    <div class="col-sm-9">
-                      <select class="form-control" name="position" id="edit_position">
-                        <option selected id="position_val"></option>
-                        <?php
-                          $sql = "SELECT * FROM position";
-                          $query = $conn->query($sql);
-                          while($prow = $query->fetch_assoc()){
-                            echo "
-                              <option value='".$prow['id']."'>".$prow['description']."</option>
-                            ";
-                          }
-                        ?>
-                      </select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="edit_schedule" class="col-sm-3 control-label">Horario</label>
-
-                    <div class="col-sm-9">
-                      <select class="form-control" id="edit_schedule" name="schedule">
-                        <option selected id="schedule_val"></option>
-                        <?php
-                          $sql = "SELECT * FROM schedules";
-                          $query = $conn->query($sql);
-                          while($srow = $query->fetch_assoc()){
-                            echo "
-                              <option value='".$srow['id']."'>".$srow['time_in'].' - '.$srow['time_out']."</option>
-                            ";
-                          }
-                        ?>
-                      </select>
-                    </div>
-                </div>
           	</div>
           	<div class="modal-footer">
             	<button type="button" class="btn btn-default btn-flat pull-left" data-dismiss="modal"><i class="fa fa-close"></i> Cerrar</button>
@@ -282,4 +276,4 @@
             </div>
         </div>
     </div>
-</div>    
+</div>
