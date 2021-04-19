@@ -76,22 +76,22 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="schedule" class="col-sm-3 control-label">Horario</label>
+<!--                    <label for="schedule" class="col-sm-3 control-label">Horario</label>-->
 
-                    <div class="col-sm-9">
-                      <select class="form-control" id="schedule" name="schedule" required>
-                        <option value="" selected>- Select -</option>
-                        <?php
-                          $sql = "SELECT * FROM schedules";
-                          $query = $conn->query($sql);
-                          while($srow = $query->fetch_assoc()){
-                            echo "
-                              <option value='".$srow['id']."'>".$srow['time_in'].' - '.$srow['time_out']."</option>
-                            ";
-                          }
-                        ?>
-                      </select>
-                    </div>
+<!--                    <div class="col-sm-9">-->
+<!--                      <select class="form-control" id="schedule" name="schedule" required>-->
+<!--                        <option value="" selected>- Select -</option>-->
+<!--                        --><?php
+//                          $sql = "SELECT * FROM schedules";
+//                          $query = $conn->query($sql);
+//                          while($srow = $query->fetch_assoc()){
+//                            echo "
+//                              <option value='".$srow['id']."'>".$srow['time_in'].' - '.$srow['time_out']."</option>
+//                            ";
+//                          }
+//                        ?>
+<!--                      </select>-->
+<!--                    </div>-->
                 </div>
 
                 <div class="form-group">
@@ -125,13 +125,21 @@
                               <select name='Horario[]'>
                                               <option selected value='{$checksday['name']}-0'>0</option>
                                 <option value='{$checksday['name']}-1'>1</option>
+                                <option value='{$checksday['name']}-1.30'>1.30</option>
                                 <option value='{$checksday['name']}-2'>2</option>
+                                <option value='{$checksday['name']}-2.30'>2.30</option>
                                 <option value='{$checksday['name']}-3'>3</option>
+                                <option value='{$checksday['name']}-3.30'>3.30</option>
                                 <option value='{$checksday['name']}-4'>4</option>
+                                <option value='{$checksday['name']}-4.30'>4.30</option>
                                 <option value='{$checksday['name']}-5'>5</option>
+                                <option value='{$checksday['name']}-5.30'>5.30</option>
                                 <option value='{$checksday['name']}-6'>6</option>
+                                <option value='{$checksday['name']}-6.30'>6.30</option>
                                 <option value='{$checksday['name']}-7'>7</option>
+                                <option value='{$checksday['name']}-7.30'>7.30</option>
                                 <option value='{$checksday['name']}-8'>8</option>
+                                <option value='{$checksday['name']}-8.30'>8.30</option>
                                 <option value='{$checksday['name']}-9'>9</option>
                               </select>
                             </td>
