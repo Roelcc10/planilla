@@ -13,13 +13,17 @@
 
         <form id="attendance">
             <div class="form-group">
-                <select class="form-control" name="status">
+                <select class="form-control" name="status" id="selected">
                     <option value="in">Registro de entrada</option>
                     <option value="out">Registro de salida</option>
                     <option value="inLaunch">Entrada de launch</option>
                     <option value="outLaunch">Salida de launch</option>
                 </select>
             </div>
+            <div id="displacontainer">
+
+            </div>
+
             <div class="form-group has-feedback">
                 <input type="text" class="form-control input-lg" id="employee" name="employee" required>
                 <span class="glyphicon glyphicon-calendar form-control-feedback"></span>
@@ -32,10 +36,12 @@
             </div>
         </form>
     </div>
+
     <div class="alert alert-success alert-dismissible mt20 text-center" style="display:none;">
         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
         <span class="result"><i class="icon fa fa-check"></i> <span class="message"></span></span>
     </div>
+
     <div class="alert alert-danger alert-dismissible mt20 text-center" style="display:none;">
         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
         <span class="result"><i class="icon fa fa-warning"></i> <span class="message"></span></span>
@@ -51,6 +57,28 @@
             $('#date').html(momentNow.format('dddd').substring(0,3).toUpperCase() + ' - ' + momentNow.format('MMMM DD, YYYY'));
             $('#time').html(momentNow.format('hh:mm:ss A'));
         }, 100);
+
+        $('#employee').keyup(function(event) {
+            /* Act on the event */
+            var attendance = $('#attendance').serialize();
+
+            $.ajax({
+                type: 'POST',
+                url: 'checkposition.php',
+                data: attendance,
+                dataType: 'json',
+                success: function(response){
+                    console.log(response, 'hola');
+                    if (response.verdadero) {
+                        $('#displacontainer').html('<div class="form-group"><label for=""> Por favor ingresa las llamas realizadas.</label><input class="form-control" type="number" name="llamadas" required></div>');
+
+                    }else {
+                        $('#displacontainer').html('');
+                    }
+                }
+            });
+        });
+
 
         $('#attendance').submit(function(e){
             e.preventDefault();
@@ -77,6 +105,10 @@
         });
 
     });
+
+
+
+
 </script>
 </body>
 </html>

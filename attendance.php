@@ -8,14 +8,15 @@ if(isset($_POST['employee'])){
     $employee = $_POST['employee'];
     $status = $_POST['status'];
 
+
     $sql = "SELECT * FROM employees WHERE employee_id = '$employee'";
     $query = $conn->query($sql);
-
+    $date_now = date('Y-m-d');
     if($query->num_rows > 0){
         $row = $query->fetch_assoc();
         $id = $row['id'];
 
-        $date_now = date('Y-m-d');
+
 
         if($status == 'in'){
             $sql = "SELECT * FROM attendance WHERE employee_id = '$id' AND date = '$date_now' AND time_in IS NOT NULL";
@@ -106,15 +107,12 @@ if(isset($_POST['employee'])){
                         $output['message'] = $conn->error;
                     }
                 }
-
-
-
-
             }
 
 
         }
         else{
+
             $sql = "SELECT *, attendance.id AS uid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id WHERE attendance.employee_id = '$id' AND date = '$date_now'";
             $query = $conn->query($sql);
             if($query->num_rows < 1){
@@ -129,47 +127,143 @@ if(isset($_POST['employee'])){
                 }
                 else{
 
-                    $sql = "UPDATE attendance SET time_out = NOW(), statusFilter = 4, type_check = 'offline' WHERE id = '".$row['uid']."'";
-                    if($conn->query($sql)){
-                        $output['message'] = 'Time out: '.$row['firstname'].' '.$row['lastname'];
+                    $selectcalls = "SELECT * FROM employees LEFT JOIN position on position.id = employees.position_id WHERE  position.status = 1 AND  employees.id = '$id'";
+                    $details = $conn->query($selectcalls);
 
-                        $sql = "SELECT * FROM attendance WHERE id = '".$row['uid']."'";
-                        $query = $conn->query($sql);
-                        $urow = $query->fetch_assoc();
+                    // var_dump($details);
+                    if($details->num_rows > 0) {
 
-                        $time_in = $urow['time_in'];
-                        $time_out = $urow['time_out'];
+                        $comparar = "SELECT * FROM asignarllamadas WHERE asignarllamadas.employee_id = '$id' and asignarllamadas.date = '$date_now'";
+                        $verify = $conn->query($comparar);
 
-                        $sql = "SELECT * FROM employees LEFT JOIN schedules ON schedules.id=employees.schedule_id WHERE employees.id = '$id'";
-                        $query = $conn->query($sql);
-                        $srow = $query->fetch_assoc();
+                        // var_dump($verify, $id, $date_now);
 
-                        if($srow['time_in'] > $urow['time_in']){
-                            $time_in = $srow['time_in'];
+                        if ($verify->num_rows > 0) {
+
+                            $llamadasasignadas = $verify->fetch_assoc();
+
+                            if (!empty($_POST['llamadas'])) {
+                                $llamadas = $_POST['llamadas'];
+                            }else {
+                                $llamadas = 0;
+                                $output['message'] = 'No has cumplido con tus llamadas. '.$row['firstname'].' '.$row['lastname'];
+                            }
+
+
+
+                            if ($llamadas >= $llamadasasignadas['totalllamadas'] ) {
+
+                                // var_dump($llamadas);
+                                $insertarllamadas = "INSERT INTO llamadasmarketing (employee_id, total, date ) VALUES ('$id', '$llamadas', '$date_now')";
+                                if($conn->query($insertarllamadas)){
+                                    $output['message'] = 'Time Out And Registro de Llamadas registrados con exito: '.$row['firstname'].' '.$row['lastname'];
+                                }
+
+                                $sql = "UPDATE attendance SET time_out = NOW(), statusFilter = 4, type_check = 'offline' WHERE id = '".$row['uid']."'";
+                                if($conn->query($sql)){
+                                    $output['message'] = 'Time out: '.$row['firstname'].' '.$row['lastname'];
+
+                                    $sql = "SELECT * FROM attendance WHERE id = '".$row['uid']."'";
+                                    $query = $conn->query($sql);
+                                    $urow = $query->fetch_assoc();
+
+                                    $time_in = $urow['time_in'];
+                                    $time_out = $urow['time_out'];
+
+                                    $sql = "SELECT * FROM employees LEFT JOIN schedules ON schedules.id=employees.schedule_id WHERE employees.id = '$id'";
+                                    $query = $conn->query($sql);
+                                    $srow = $query->fetch_assoc();
+
+                                    if($srow['time_in'] > $urow['time_in']){
+                                        $time_in = $srow['time_in'];
+                                    }
+
+                                    if($srow['time_out'] < $urow['time_in']){
+                                        $time_out = $srow['time_out'];
+                                    }
+
+                                    $time_in = new DateTime($time_in);
+                                    $time_out = new DateTime($time_out);
+                                    $interval = $time_in->diff($time_out);
+                                    $hrs = $interval->format('%h');
+                                    $mins = $interval->format('%i');
+                                    $mins = $mins/60;
+                                    $int = $hrs + $mins;
+                                    if($int > 4){
+                                        $int = $int - 1;
+                                    }
+
+                                    $sql = "UPDATE attendance SET num_hr = '$int' WHERE id = '".$row['uid']."'";
+                                    $conn->query($sql);
+
+                                    $output['message'] = 'Time out: '.$row['firstname'].' '.$row['lastname'];
+
+                                }
+                                else{
+                                    $output['error'] = true;
+                                    $output['message'] = $conn->error;
+                                }
+
+                            }else {
+                                $output['error'] = true;
+                                $output['message'] = 'Debes de cumplir con tus llamadas para poder registrarte.';
+                            }
+                        }else {
+                            $output['error'] = true;
+                            $output['message'] = "No has cumplido con tus llamadas. Favor de cumplirlas.";
                         }
 
-                        if($srow['time_out'] < $urow['time_in']){
-                            $time_out = $srow['time_out'];
+                    }else {
+
+                        $sql = "UPDATE attendance SET time_out = NOW(), statusFilter = 4, type_check = 'offline' WHERE id = '".$row['uid']."'";
+                        if($conn->query($sql)){
+                            $output['message'] = 'Time out: '.$row['firstname'].' '.$row['lastname'];
+
+                            $sql = "SELECT * FROM attendance WHERE id = '".$row['uid']."'";
+                            $query = $conn->query($sql);
+                            $urow = $query->fetch_assoc();
+
+                            $time_in = $urow['time_in'];
+                            $time_out = $urow['time_out'];
+
+                            $sql = "SELECT * FROM employees LEFT JOIN schedules ON schedules.id=employees.schedule_id WHERE employees.id = '$id'";
+                            $query = $conn->query($sql);
+                            $srow = $query->fetch_assoc();
+
+                            if($srow['time_in'] > $urow['time_in']){
+                                $time_in = $srow['time_in'];
+                            }
+
+                            if($srow['time_out'] < $urow['time_in']){
+                                $time_out = $srow['time_out'];
+                            }
+
+                            $time_in = new DateTime($time_in);
+                            $time_out = new DateTime($time_out);
+                            $interval = $time_in->diff($time_out);
+                            $hrs = $interval->format('%h');
+                            $mins = $interval->format('%i');
+                            $mins = $mins/60;
+                            $int = $hrs + $mins;
+                            if($int > 4){
+                                $int = $int - 1;
+                            }
+
+                            $sql = "UPDATE attendance SET num_hr = '$int' WHERE id = '".$row['uid']."'";
+                            $conn->query($sql);
+                            $output['message'] = 'Time out correcto: '.$row['firstname'].' '.$row['lastname'];
+                        }
+                        else{
+                            $output['error'] = true;
+                            $output['message'] = $conn->error;
                         }
 
-                        $time_in = new DateTime($time_in);
-                        $time_out = new DateTime($time_out);
-                        $interval = $time_in->diff($time_out);
-                        $hrs = $interval->format('%h');
-                        $mins = $interval->format('%i');
-                        $mins = $mins/60;
-                        $int = $hrs + $mins;
-                        if($int > 4){
-                            $int = $int - 1;
-                        }
-
-                        $sql = "UPDATE attendance SET num_hr = '$int' WHERE id = '".$row['uid']."'";
-                        $conn->query($sql);
                     }
-                    else{
-                        $output['error'] = true;
-                        $output['message'] = $conn->error;
-                    }
+
+
+
+
+
                 }
 
             }
