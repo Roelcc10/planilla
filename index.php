@@ -37,15 +37,14 @@
         </form>
     </div>
 
-    <div class="alert alert-success alert-dismissible mt20 text-center" style="display:none;">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        <span class="result"><i class="icon fa fa-check"></i> <span class="message"></span></span>
+    <div class="message">
+
     </div>
 
-    <div class="alert alert-danger alert-dismissible mt20 text-center" style="display:none;">
+    <!-- <div class="alert alert-danger alert-dismissible mt20 text-center" style="display:none;">
         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
         <span class="result"><i class="icon fa fa-warning"></i> <span class="message"></span></span>
-    </div>
+    </div> -->
 
 </div>
 
@@ -70,7 +69,7 @@
                 success: function(response){
                     console.log(response, 'hola');
                     if (response.verdadero) {
-                        $('#displacontainer').html('<div class="form-group"><label for=""> Por favor ingresa las llamas realizadas.</label><input class="form-control" type="number" name="llamadas" required></div>');
+                        $('#displacontainer').html('<div class="form-group"><label for="">Llamadas Realizadas.</label><input class="form-control" type="number" name="llamadas" required></div>  <div class="form-group"><label for="">Llamadas Efectivas</label><input class="form-control" type="number" name="llamadasefectivas" required></div> <div class="form-group"><label for="">Resumen de lo realizado</label><textarea class="form-control"  name="resumenrealizado" ></textarea></div>');
 
                     }else {
                         $('#displacontainer').html('');
@@ -90,14 +89,16 @@
                 dataType: 'json',
                 success: function(response){
                     if(response.error){
-                        $('.alert').hide();
-                        $('.alert-danger').show();
-                        $('.message').html(response.message);
+                        // $('.alert').hide();
+                        // $('.alert-danger').show();
+                        $('.message').html(' <div class="alert alert-danger alert-dismissible mt20 text-center"><button type="button" class="close"data-dismiss="alert" aria-hidden="true">&times;</button><span class="result"><i class="icon fa fa-warning"></i> <span class="message"></span>'+response.message+'</span></div>');
                     }
                     else{
-                        $('.alert').hide();
-                        $('.alert-success').show();
-                        $('.message').html(response.message);
+                        // $('.alert').hide();
+                        // $('.alert-success').show();
+                        $('.message').html('<div class="alert alert-success alert-dismissible mt20 text-center"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button><span class="result"><i class="icon fa fa-check"></i> <span class="message">'+response.message+'</span></span></div>');
+
+
                         $('#employee').val('');
                     }
                 }

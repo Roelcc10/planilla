@@ -51,6 +51,7 @@
                                 <form method="POST" class="form-inline" id="attedance">
                                     <div class="form-check">
 
+                                        </select>
                                         <input class="form-check-input" type="radio" name="searchstatus" id="exampleRadios0" value="0" checked <?php echo !empty($_POST['searchstatus'] ) ?  $_POST['searchstatus'] == 0 ? 'checked' : '' : '' ;?> >
                                         <label class="form-check-label" for="exampleRadios0" >
                                             All
@@ -74,6 +75,39 @@
                                         <label class="form-check-label" for="exampleRadios4">
                                             Offline
                                         </label>
+                                    </div>
+                                    <div class="input-group">
+                                        <select class="form-control" name="empresa" id="edit_empresa">
+                                            <option selected value="0">-- select --</option>
+                                            <?php
+                                            $sql = "SELECT * FROM empresas";
+                                            $query = $conn->query($sql);
+
+                                            while($rowEmp = $query->fetch_assoc()){
+
+                                                if (!empty($_POST['empresa'])) {
+
+                                                    if ($_POST['empresa'] == $rowEmp['id']) {
+                                                        echo "
+                                                            <option selected value='".$rowEmp['id']."'>".$rowEmp['nombre']."</option>
+                                                          ";
+
+                                                    } else {
+                                                        echo "
+                                                        <option value='".$rowEmp['id']."'>".$rowEmp['nombre']."</option>
+                                                      ";
+                                                    }
+
+                                                } else {
+                                                    echo "
+                                                    <option value='".$rowEmp['id']."'>".$rowEmp['nombre']."</option>
+                                                  ";
+                                                }
+
+
+
+                                            }
+                                            ?>
                                     </div>
                                     <div class="input-group">
                                         <div class="input-group-addon">
@@ -125,18 +159,58 @@
                                     $dates = explode ('-', $_POST['date_range']);
                                     $from = date('Y-m-d', strtotime($dates[0]));
                                     $to = date('Y-m-d', strtotime($dates[1]));
+
+
                                     if ($_POST['searchstatus'] == '0') {
-                                        $sql = "SELECT *, employees.employee_id AS empid, attendance.id AS attid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id
-                                where date BETWEEN '$from' AND '$to'  ORDER BY attendance.date DESC, attendance.time_in DESC, attendance.id DESC";
+
+                                        if (!empty($_POST['empresa']) > 0) {
+
+                                            $empresa = $_POST['empresa'];
+
+                                            $sql = "SELECT *, employees.employee_id AS empid, attendance.id AS attid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id LEFT JOIN empresas on empresas.id = employees.empresa_id where date BETWEEN '$from' AND '$to' AND employees.empresa_id = '$empresa' ORDER BY attendance.date DESC, attendance.time_in DESC, attendance.id DESC";
+
+                                        }else {
+                                            $sql = "SELECT *, employees.employee_id AS empid, attendance.id AS attid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id where date BETWEEN '$from' AND '$to'  ORDER BY attendance.date DESC, attendance.time_in DESC, attendance.id DESC";
+                                        }
+
+
 
                                     }else if (!empty($_POST['searchstatus']) && $_POST['searchstatus'] ==  1) {
+
                                         $status = $_POST['searchstatus'];
-                                        $sql = "SELECT *, employees.employee_id AS empid, attendance.id AS attid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id where date BETWEEN '$from' AND '$to' AND statusFilter = 1 OR statusFilter = 3 ORDER BY attendance.date DESC, attendance.time_in DESC, attendance.id DESC";
+
+                                        if (!empty($_POST['empresa']) > 0) {
+                                            $empresa = $_POST['empresa'];
+                                            var_dump($empresa);
+                                            $sql = "SELECT *, employees.employee_id AS empid, attendance.id AS attid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id LEFT JOIN empresas on empresas.id = employees.empresa_id where date BETWEEN '$from' AND '$to' AND statusFilter = 1 OR statusFilter = 3  AND employees.empresa_id = '$empresa' ORDER BY attendance.date DESC, attendance.time_in DESC, attendance.id DESC";
+
+                                        }else {
+
+
+                                            $sql = "SELECT *, employees.employee_id AS empid, attendance.id AS attid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id where date BETWEEN '$from' AND '$to' AND statusFilter = 1 OR statusFilter = 3 ORDER BY attendance.date DESC, attendance.time_in DESC, attendance.id DESC";
+
+                                        }
+
                                     }
                                     else if (!empty($_POST['searchstatus'])) {
+
+
                                         $status = $_POST['searchstatus'];
-                                        $sql = "SELECT *, employees.employee_id AS empid, attendance.id AS attid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id where date BETWEEN '$from' AND '$to' AND statusFilter = '$status' ORDER BY attendance.date DESC, attendance.time_in DESC, attendance.id DESC";
+
+                                        if (!empty($_POST['empresa']) > 0) {
+                                            $empresa = $_POST['empresa'];
+                                            $sql = "SELECT *, employees.employee_id AS empid, attendance.id AS attid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id LEFT JOIN empresas on empresas.id = employees.empresa_id where date BETWEEN '$from' AND '$to' AND statusFilter = '$status' AND employees.empresa_id = '$empresa' ORDER BY attendance.date DESC, attendance.time_in DESC, attendance.id DESC";
+
+
+                                        }else{
+                                            $sql = "SELECT *, employees.employee_id AS empid, attendance.id AS attid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id where date BETWEEN '$from' AND '$to' AND statusFilter = '$status' ORDER BY attendance.date DESC, attendance.time_in DESC, attendance.id DESC";
+
+                                        }
+
+
+
                                     }
+
 
                                 } else {
                                     $sql = "SELECT *, employees.employee_id AS empid, attendance.id AS attid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id ORDER BY attendance.date DESC, attendance.time_in DESC, attendance.id DESC";
@@ -285,6 +359,11 @@
         $('#attedance').submit();
     });
     $('#exampleRadios4').click(function(event) {
+        /* Act on the event */
+        $('#attedance').submit();
+    });
+
+    $('#edit_empresa').change(function(event) {
         /* Act on the event */
         $('#attedance').submit();
     });

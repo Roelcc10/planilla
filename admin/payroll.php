@@ -54,27 +54,6 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                             <div class="pull-right">
                                 <form method="POST" class="form-inline" id="payForm">
                                     <div class="input-group">
-                                        <select class="form-control" name="empresa" id="empresa" required>
-                                            <option value="">- Empresa -</option>
-                                            <?php
-                                            $empresa = "SELECT * FROM empresas";
-                                            $emp = $conn->query($empresa);
-
-                                            while($rows =  $emp->fetch_assoc()) {
-
-
-                                                if ($_GET['empresa'] == $rows['id']) {
-                                                    var_dump($_GET['empresa']);
-                                                    echo "<option selected value='{$rows['id']}'>{$rows['nombre']}</option>";
-                                                }else {
-                                                    echo "<option value='{$rows['id']}'>{$rows['nombre']}</option>";
-                                                }
-                                            }
-
-                                            ?>
-                                        </select>
-                                    </div>
-                                    <div class="input-group">
                                         <div class="input-group-addon">
                                             <i class="fa fa-calendar"></i>
                                         </div>
@@ -116,19 +95,14 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                                     $from = date('Y-m-d', strtotime($ex[0]));
                                     $to = date('Y-m-d', strtotime($ex[1]));
                                 }
-                                if (!empty(isset($_GET['empresa']))) {
-                                    $empresa = $_GET['empresa'];
-
-                                    $sql = "SELECT *, break.break as descanso, SUM(num_hr) AS total_hr, position.id as position, COUNT(attendance.id) as dias, attendance.employee_id AS empid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id LEFT JOIN position ON position.id=employees.position_id LEFT JOIN break ON break.id = employees.break_id LEFT JOIN empresas on empresas.id = employees.empresa_id  WHERE date BETWEEN '$from' AND '$to' AND employees.empresa_id = '$empresa' GROUP BY attendance.employee_id ORDER BY employees.lastname ASC, employees.firstname ASC";
-                                }else {
-                                    $sql = "SELECT *, break.break as descanso, SUM(num_hr) AS total_hr, position.id as position, COUNT(attendance.id) as dias, attendance.employee_id AS empid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id LEFT JOIN position ON position.id=employees.position_id LEFT JOIN break ON break.id = employees.break_id LEFT JOIN empresas on empresas.id = employees.empresa_id  WHERE date BETWEEN '$from' AND '$to' GROUP BY attendance.employee_id ORDER BY employees.lastname ASC, employees.firstname ASC";
-                                }
                                 $totalAPagarExtra  = 0;
+
                                 /*
                                     Generamos los días que vamos a omitir en la nòmina dependiendo el día. si es 13 o 27.
                                 */
 
 
+                                $sql = "SELECT *, break.break as descanso, SUM(num_hr) AS total_hr, position.id as position, COUNT(attendance.id) as dias, attendance.employee_id AS empid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id LEFT JOIN position ON position.id=employees.position_id LEFT JOIN break ON break.id = employees.break_id WHERE date BETWEEN '$from' AND '$to' GROUP BY attendance.employee_id ORDER BY employees.lastname ASC, employees.firstname ASC";
 
 
 
@@ -466,7 +440,7 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                           <td>".number_format($cashadvance, 2)."</td>
                           <td>".$diasTrabajados."</td>
                           <td>".$diasPagados."</td>
-                          <td>".$row['total_hr']."</td>
+                          <td>".$row['total_hr']."</td>                          
                           <td>".number_format($totalAPagarExtra, 2)."</td>
                           <td>".number_format($net - $TotalDeducciones, 2)."</td>
                         </tr>
@@ -544,15 +518,8 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
         });
 
         $("#reservation").on('change', function(){
-
             var range = encodeURI($(this).val());
-            var empresa = $('#empresa').val();
-            if (empresa) {
-                window.location = 'payroll.php?range='+range+'&empresa='+empresa;
-            }else {
-                window.location = 'payroll.php?range='+range;
-            }
-
+            window.location = 'payroll.php?range='+range;
         });
 
         $('#payroll').click(function(e){
