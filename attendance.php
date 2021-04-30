@@ -127,7 +127,7 @@ if(isset($_POST['employee'])){
                 }
                 else{
 
-                    $selectcalls = "SELECT * FROM employees LEFT JOIN position on position.id = employees.position_id WHERE  position.status = 1 AND  employees.id = '$id'";
+                    $selectcalls = "SELECT * FROM employees LEFT JOIN position on position.id = employees.position_id WHERE  employees.trabajador = 1 AND  employees.id = '$id'";
 
                     $details = $conn->query($selectcalls);
 
@@ -221,6 +221,7 @@ if(isset($_POST['employee'])){
                                 $mins = $interval->format('%i');
                                 $mins = $mins/60;
                                 $int = $hrs + $mins;
+
                                 if($int > 4){
                                     $int = $int - 1;
                                 }

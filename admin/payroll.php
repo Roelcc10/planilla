@@ -96,7 +96,7 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                                 <th>Días Trabajados</th>
                                 <th>Días Pagados</th>
                                 <th>Horas Trabajadas</th>
-                                <th>Horas Extras a pagar</th>
+                                <th>Extras a pagar Por Horas</th>
                                 <th>Pago neto</th>
                                 </thead>
                                 <tbody>
@@ -125,6 +125,8 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                                     $sql = "SELECT *, break.break as descanso, SUM(num_hr) AS total_hr, position.id as position, COUNT(attendance.id) as dias, attendance.employee_id AS empid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id LEFT JOIN position ON position.id=employees.position_id LEFT JOIN break ON break.id = employees.break_id LEFT JOIN empresas on empresas.id = employees.empresa_id  WHERE date BETWEEN '$from' AND '$to' GROUP BY attendance.employee_id  AND employees.status = 1 ORDER BY employees.lastname ASC, employees.firstname ASC";
                                 }
                                 $totalAPagarExtra  = 0;
+
+                                // var_dump($from, $to);
                                 /*
                                     Generamos los días que vamos a omitir en la nòmina dependiendo el día. si es 13 o 27.
                                 */
@@ -188,10 +190,19 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                                     $pagoPorHoras = 0;
 
                                     $contandoDias = 0;
+                                    $horasporpagar = 0;
                                     /* NUEVO CÓDIGO PARA OBTENER EL SUELDO POR SUS HORAS TRABAJADAS */
                                     while ($starDate <= $endDate) {
 
-                                        $contandoDias = $contandoDias + 1;
+                                        // echo $starDate->format('Y-m-d');
+
+                                        // var_dump($endDate);
+
+                                        // if ($starDate->format('Y-m-d') >= date('Y-m-28')) {
+                                        //       $contandoDias = -1;
+                                        //     // echo $from;
+                                        // }
+
                                         // echo $contandoDias;
                                         // echo $contandoDias;
                                         /*- Primero vamos a Buscar su horario. */
@@ -207,6 +218,87 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                                         /*- Ahora vamos a buscar en attendance para ver las horas desde la fecha que nos esta solicitando. */
                                         $searchAttendance = "SELECT * FROM attendance WHERE date = '$searchAttendanceday' and employee_id = '$empid' LIMIT 1";
                                         $attendanceDay = $conn->query($searchAttendance);
+
+                                        /* CALCULO DE HORAS EXTRAS */
+
+                                        // $starDate = new Datetime($from);
+                                        //  $endDate = new Datetime($to);
+
+                                        // $horasporpagar = 0;
+                                        // echo $starDate->format('Y-m-d');
+                                        /* Para ver los días desde donde se va a pagar correctamente ejemplo este es desde el 28 del mes pasado al 13 del mes presente*/
+                                        if ($starDate->format('Y-m-d') == date('Y-m-01') || $starDate->format('Y-m-d') <= date('Y-m-13')) {
+                                            // echo $starDate->format('Y-m-d');
+                                            $month_ini = new DateTime("first day of last month");
+                                            $lasmonth = $month_ini->modify('+27 day')->format('Y-m-d');
+                                            $now = date('Y-m-13');
+
+                                            // echo 'entre en mi inicio de mes.';
+
+                                            if ($horasporpagar == 0) {
+                                                /* PAGAR LAS HORAS EXTRAS PENDIENTES DEL MES PASADO 28-29-30-31*/
+                                                $pagarHorasExtra = "SELECT COUNT(employee_id) as por_pagar FROM overtime where status = 1 AND employee_id = '$empid' and date_overtime BETWEEN '$lasmonth' and '$now' GROUP BY employee_id";
+
+                                                // echo $pagarHorasExtra;
+
+                                                $pagarHorasExtra = $conn->query($pagarHorasExtra);
+
+
+                                                if ($pagarHorasExtra->num_rows > 0) {
+
+                                                    $pagarHorasExtra =  $pagarHorasExtra->fetch_assoc();
+
+                                                    $porcentaje = ($ganancia['rate'] / 100) * 25;
+                                                    $totalAPagarExtra = $totalAPagarExtra + $porcentaje * $pagarHorasExtra['por_pagar'];
+                                                    // echo 'ya te page tus horas extras de la segunda semana del mes pasado '.  $pagarHorasExtra['por_pagar'];
+                                                }
+
+                                                $horasporpagar = $horasporpagar + 1;
+
+                                            }
+
+
+
+                                        }
+
+                                        else  {
+
+                                            if ($starDate->format('Y-m-d') > date('Y-m-15') && $starDate->format('Y-m-d') <= date('Y-m-27')){
+                                                // echo $starDate->format('Y-m-d');
+                                                $now =  date('Y-m-14');
+                                                $last = date('Y-m-27');
+
+                                                // echo 'entre en mi cierre de mes.';
+
+                                                /* PAGAR LAS HORAS EXTRAS PENDIENTES DEL MES PASADO 28-29-30-31*/
+
+                                                if ($horasporpagar == 1  || $starDate->format('Y-m-d') ==  date('Y-m-16')) {
+
+                                                    $pagarHorasExtraFinMes = "SELECT COUNT(employee_id) as por_pagar FROM overtime where status = 1 AND employee_id = '$empid' and date_overtime BETWEEN '$now' and '$last' GROUP BY employee_id";
+                                                    // echo $pagarHorasExtraFinMes;
+
+                                                    $pagarHorasExtraFinMes = $conn->query($pagarHorasExtraFinMes);
+                                                    // var_dump($pagarHorasExtraFinMes);
+
+
+                                                    if ($pagarHorasExtraFinMes->num_rows > 0) {
+                                                        $pagarHorasExtraFinMes =  $pagarHorasExtraFinMes->fetch_assoc();
+                                                        $porcentaje = ($ganancia['rate'] / 100) * 25;
+                                                        $totalAPagarExtra = $totalAPagarExtra + $porcentaje * $pagarHorasExtraFinMes['por_pagar'];
+                                                        // echo 'ya te page tus horas extras de la primer semana del mes presente '.  $pagarHorasExtraFinMes['por_pagar'];
+                                                        $horasporpagar = $horasporpagar + 2;
+                                                    }
+
+                                                    // echo 'ya te pague tus horas extras se la semana presente prro';
+                                                }
+
+                                            }
+                                        }
+
+
+
+
+
 
                                         /* si no se encuentra registro en attendance que son checadas no vale la pena seguir procesando y cortamos el ciclo. */
 
@@ -367,7 +459,8 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                                         }
 
 
-
+                                        $contandoDias = $contandoDias + 1;
+                                        // echo $contandoDias;
 
 
                                         // else {
@@ -485,6 +578,49 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
 
                                         }
 
+
+
+
+
+
+                                        /* este es para calcular la nómina sin pagar descanso en los días solicitados siempre y cuando los haya trabajado en descansos. */
+                                        // while($starDate <= $endDate){
+
+                                        //     if($starDate->format('l')== $descanso) {
+
+                                        //      $fechaBuscar =  $starDate->format('Y-m-d');
+                                        //      $descansos = "SELECT * FROM  attendance  WHERE employee_id = '$empid' and  date = '$fechaBuscar'";
+                                        //      $descansoTrabajado = $conn->query($descansos);
+
+                                        //      if ($descansoTrabajado->num_rows > 0) {
+
+                                        //          /* si su descanso cae el 14 o 15 y lo trabaja. no se paga hasta la siguiente quincena.  */
+                                        //          if($starDate->format('Y-m-d') == date('Y-m-14') || $starDate->format('Y-m-d') == date('Y-m-15')) {
+
+                                        //              $gross = $gross - $ganancia['rate'];
+                                        //              $diasPagados = $diasTrabajados - 1;
+
+                                        //          }
+
+                                        //          /* para omitir los días 28- al 31 del mes si es que los tiene esos días.*/
+                                        //          if($starDate->format('Y-m-d') == date('Y-m-28')  || $starDate->format('Y-m-d') == date('Y-m-30') || $starDate->format('Y-m-d') == date('Y-m-31')) {
+
+                                        //              $gross = $gross - $ganancia['rate'];
+                                        //              $diasPagados = $diasTrabajados - 1;
+
+                                        //          }
+
+
+                                        //      } else {
+                                        //          $diasPagados = $diasTrabajados;
+                                        //      }
+
+                                        //     }
+                                        //     $starDate->modify("+1 days");
+                                        // }
+
+
+
                                     }
 
 
@@ -510,8 +646,8 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                                           <td>".$diasPagados."</td>
                                           <td>".$row['total_hr']."</td>
 
-                                          <td>".number_format($totalAPagarExtra, 2)."</td>
-                                          <td>".number_format(( $net -  $TotalDeducciones), 2)."</td>
+                                          <td>".number_format(round($totalAPagarExtra, 0, PHP_ROUND_HALF_EVEN ), 2)."</td>
+                                          <td>".number_format(( $net -  $TotalDeducciones + round($totalAPagarExtra, 0, PHP_ROUND_HALF_EVEN )), 2)."</td>
                                         </tr>
                                     ";
                                     // $SueldoApagar = 0;
