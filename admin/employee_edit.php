@@ -2,7 +2,6 @@
 include 'includes/session.php';
 
 if(isset($_POST['edit'])){
-    // var_dump($_POST['id']);
     $empid = $_POST['id'];
     $firstname = $_POST['firstname'];
     $lastname = $_POST['lastname'];
@@ -11,19 +10,100 @@ if(isset($_POST['edit'])){
     $contact = $_POST['contact'];
     $gender = $_POST['gender'];
     $position = $_POST['position'];
-    // $schedule = $_POST['schedule'];
+    $afp = $_POST['afp'];
+    $tipo_comision = $_POST['tipo_comision'];
 
     // $sql = "UPDATE employees SET firstname = '$firstname', lastname = '$lastname', address = '$address', birthdate = '$birthdate', contact_info = '$contact', gender = '$gender', position_id = '$position', schedule_id = '$schedule' WHERE id = '$empid'";
 
-    $sql = "UPDATE employees SET firstname = '$firstname', lastname = '$lastname', address = '$address', birthdate = '$birthdate', contact_info = '$contact', gender = '$gender', position_id = '$position' WHERE id = '$empid'";
+    $sql = "UPDATE employees SET firstname = '$firstname', lastname = '$lastname', address = '$address', birthdate = '$birthdate', contact_info = '$contact', gender = '$gender', position_id = '$position', afp_id = '$afp'  WHERE id = '$empid'";
+
+    $conn->query($sql);
 
     // $sql = "UPDATE employees SET firstname = '$firstname', lastname = '$lastname', address = '$address', birthdate = '$birthdate', contact_info = '$contact', gender = '$gender', position_id = '$position' WHERE id = '$empid'";
+
+
+    /* Actualización de AFP*/
+    $afp_query = "SELECT * from afp_employee WHERE employee_id = '$empid'";
+    $afpquery = $conn->query($afp_query);
+
+
+    if ($afpquery->num_rows > 0) {
+        /* es mejor borrar y volver agregar, no será mucho recurso el que se tomara al realizar esta operación.
+            así no buscamos para hacer updates simplemente agregamos nuevamente y ya, más fácil.
+        */
+
+        $deleteafp = "DELETE FROM afp_employee where employee_id = '$empid'";
+        $conn->query($deleteafp);
+
+        /* necestio saber el tipo de comisión que se tomara en cuenta. */
+        $comision = "SELECT * FROM descuentos_sbs WHERE id = '$tipo_comision'";
+        $tipocomision = $conn->query($comision);
+
+        /* Obtenemos las comisiones adicionales. para guardarlas en una sola tabla. */
+        $adicionales = "SELECT * FROM descuentos_sbs WHERE afp_id = '$afp' and status = 0";
+        $comisionadicional = $conn->query($adicionales);
+
+
+        $comision = $tipocomision->fetch_assoc();
+
+        $micomision = $comision['slug'];
+        $percentage = $comision['percentage'];
+        $miafp = $comision['afp_id'];
+
+
+        $insertafp = "INSERT INTO afp_employee  (slug, percentage, afp_id, employee_id) VALUES ('$micomision', '$percentage', '$miafp', '$empid')";
+        $conn->query($insertafp);
+
+
+        while ($agregarcomision = $comisionadicional->fetch_assoc()) {
+            $micomision = $agregarcomision['slug'];
+            $percentage = $agregarcomision['percentage'];
+            $miafp = $agregarcomision['afp_id'];
+
+            $insertafp = "INSERT INTO afp_employee  (slug, percentage, afp_id, employee_id) VALUES ('$micomision', '$percentage', '$miafp', '$empid')";
+            $conn->query($insertafp);
+        }
+
+
+    }else{
+
+        /* necestio saber el tipo de comisión que se tomara en cuenta. */
+        $comision = "SELECT * FROM descuentos_sbs WHERE id = '$tipo_comision'";
+        $tipocomision = $conn->query($comision);
+
+        /* Obtenemos las comisiones adicionales. para guardarlas en una sola tabla. */
+        $adicionales = "SELECT * FROM descuentos_sbs WHERE afp_id = '$afp' and status = 0";
+        $comisionadicional = $conn->query($adicionales);
+
+        $comision = $tipocomision->fetch_assoc();
+
+        $micomision = $comision['slug'];
+        $percentage = $comision['percentage'];
+        $miafp = $comision['afp_id'];
+
+
+        $insertafp = "INSERT INTO afp_employee  (slug, percentage, afp_id, employee_id) VALUES ('$micomision', '$percentage', '$miafp', '$empid')";
+        $conn->query($insertafp);
+
+
+        while ($agregarcomision = $comisionadicional->fetch_assoc()) {
+            $micomision = $agregarcomision['slug'];
+            $percentage = $agregarcomision['percentage'];
+
+            $miafp = $agregarcomision['afp_id'];
+
+            $insertafp = "INSERT INTO afp_employee  (slug, percentage, afp_id, employee_id) VALUES ('$micomision', '$percentage', '$miafp', '$empid')";
+            $conn->query($insertafp);
+        }
+
+    }
+
 
     $tengoHorarios = "SELECT * FROM weekschedules WHERE employee_id = '$empid'";
     $tengo = $conn->query($tengoHorarios);
 
     if ($tengo->num_rows > 0 && $tengo->num_rows == 7) {
-        // echo 'NO Soy Falos';
+
         for ($i=0; $i <= count($_POST['Horario'])-1; $i++) {
             $explode = explode('-', $_POST['Horario'][$i]);
             $updateDaystoWorks = "UPDATE weekschedules SET date_work = '$explode[0]', hours = '$explode[1]' WHERE employee_id = '$empid' and date_work =  '$explode[0]'";
@@ -39,7 +119,6 @@ if(isset($_POST['edit'])){
         }
     } else {
 
-        // echo 'Soy Falso';
         $elimina = "DELETE FROM weekschedules where employee_id = '$empid'";
         $conn->query($elimina);
 
@@ -57,14 +136,13 @@ if(isset($_POST['edit'])){
         }
     }
 
-    // var_dump($_POST['horarioweek']);
 
 
     $tengoHorarios = "SELECT * FROM horarios WHERE employee_id = '$empid'";
     $tengo = $conn->query($tengoHorarios);
 
     if ($tengo->num_rows > 0 && $tengo->num_rows == 7) {
-        // echo 'NO Soy Falos';
+
         for ($i=0; $i <= count($_POST['horarioweek'])-1; $i++) {
 
             $explode = explode('-', $_POST['horarioweek'][$i]);
@@ -82,7 +160,6 @@ if(isset($_POST['edit'])){
 
     } else {
 
-        // echo 'Soy Falso';
         $elimina = "DELETE FROM horarios where employee_id = '$empid'";
         $conn->query($elimina);
 

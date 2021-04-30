@@ -94,7 +94,7 @@
                         <!--                    </div>-->
                     </div>
                     <div class="form-group">
-                        <label for="edit_weeSchedule" class="col-sm-3 control-label">Horario</label>
+                        <label for="edit_weeSchedule" class="col-sm-3 control-label">Horario de Entrada</label>
 
                         <div class="col-sm-9">
                             <table style="width: 100%; text-align: center;">
@@ -225,7 +225,7 @@
                         <label for="afp" class="col-sm-3 control-label">AFP</label>
 
                         <div class="col-sm-9">
-                            <select class="form-control" id="afp" name="afp" required>
+                            <select class="form-control" id="afp" name="afp">
                                 <option value="" selected>- Select -</option>
                                 <?php
                                 $sql = "SELECT * FROM afp";
@@ -236,6 +236,36 @@
                             ";
                                 }
                                 ?>
+                            </select>
+                        </div>
+                    </div>
+
+
+                    <div class="form-group" style="display: none;" id="add_new_employee">
+                        <label for="edit_afp" class="col-sm-3 control-label">Tipo de comisión.</label>
+
+                        <div class="col-sm-9">
+                            <select class="form-control" name="tipo_comision" id="add_afp_subitems" >
+                                <!-- <option selected id="position_val"></option> -->
+                                <?php
+                                // $sql = "SELECT * FROM afp";
+                                // $query = $conn->query($sql);
+                                // while($prow = $query->fetch_assoc()){
+                                //   if ($prow['id'] == $row['afp_id']) {
+                                //     echo "
+                                //       <option selected value='".$prow['id']."'>".$prow['name']."</option>
+                                //     ";
+                                //   }else {
+                                //      echo "
+                                //         <option value='".$prow['id']."'>".$prow['name']."</option>
+                                //       ";
+                                //   }
+
+                                // }
+                                ?>
+
+
+
                             </select>
                         </div>
                     </div>

@@ -370,6 +370,8 @@ if(isset($_POST['id'])){
         </div>
     </div>
 
+
+
     <script type="text/javascript">
 
         $('#edit_afp').change(function(event) {
@@ -402,7 +404,7 @@ if(isset($_POST['id'])){
         <label for="edit_afp" class="col-sm-3 control-label">Tipo de comisión.</label>
 
         <div class="col-sm-9">
-            <select class="form-control" name="afp" id="afp_subitems" >
+            <select class="form-control" name="tipo_comision" id="afp_subitems" >
                 <!-- <option selected id="position_val"></option> -->
                 <?php
                 // $sql = "SELECT * FROM afp";

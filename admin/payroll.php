@@ -54,6 +54,27 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                             <div class="pull-right">
                                 <form method="POST" class="form-inline" id="payForm">
                                     <div class="input-group">
+                                        <select class="form-control" name="empresa" id="empresa" required>
+                                            <option value="">- Empresa -</option>
+                                            <?php
+                                            $empresa = "SELECT * FROM empresas";
+                                            $emp = $conn->query($empresa);
+
+                                            while($rows =  $emp->fetch_assoc()) {
+
+
+                                                if ($_GET['empresa'] == $rows['id']) {
+                                                    var_dump($_GET['empresa']);
+                                                    echo "<option selected value='{$rows['id']}'>{$rows['nombre']}</option>";
+                                                }else {
+                                                    echo "<option value='{$rows['id']}'>{$rows['nombre']}</option>";
+                                                }
+                                            }
+
+                                            ?>
+                                        </select>
+                                    </div>
+                                    <div class="input-group">
                                         <div class="input-group-addon">
                                             <i class="fa fa-calendar"></i>
                                         </div>
@@ -95,14 +116,20 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                                     $from = date('Y-m-d', strtotime($ex[0]));
                                     $to = date('Y-m-d', strtotime($ex[1]));
                                 }
-                                $totalAPagarExtra  = 0;
+                                if (!empty(isset($_GET['empresa']))) {
+                                    $empresa = $_GET['empresa'];
 
+                                    $sql = "SELECT *, break.break as descanso, SUM(num_hr) AS total_hr, position.id as position, COUNT(attendance.id) as dias, attendance.employee_id AS empid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id LEFT JOIN position ON position.id=employees.position_id LEFT JOIN break ON break.id = employees.break_id LEFT JOIN empresas on empresas.id = employees.empresa_id  WHERE date BETWEEN '$from' AND '$to' AND employees.empresa_id = '$empresa' AND employees.status = 1 GROUP BY attendance.employee_id ORDER BY employees.lastname ASC, employees.firstname ASC";
+
+                                }else {
+                                    $sql = "SELECT *, break.break as descanso, SUM(num_hr) AS total_hr, position.id as position, COUNT(attendance.id) as dias, attendance.employee_id AS empid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id LEFT JOIN position ON position.id=employees.position_id LEFT JOIN break ON break.id = employees.break_id LEFT JOIN empresas on empresas.id = employees.empresa_id  WHERE date BETWEEN '$from' AND '$to' GROUP BY attendance.employee_id  AND employees.status = 1 ORDER BY employees.lastname ASC, employees.firstname ASC";
+                                }
+                                $totalAPagarExtra  = 0;
                                 /*
                                     Generamos los días que vamos a omitir en la nòmina dependiendo el día. si es 13 o 27.
                                 */
 
 
-                                $sql = "SELECT *, break.break as descanso, SUM(num_hr) AS total_hr, position.id as position, COUNT(attendance.id) as dias, attendance.employee_id AS empid FROM attendance LEFT JOIN employees ON employees.id=attendance.employee_id LEFT JOIN position ON position.id=employees.position_id LEFT JOIN break ON break.id = employees.break_id WHERE date BETWEEN '$from' AND '$to' GROUP BY attendance.employee_id ORDER BY employees.lastname ASC, employees.firstname ASC";
 
 
 
@@ -118,6 +145,8 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                                     $descanso = $row['descanso'];
 
                                     $diasTrabajados = $row['dias'];
+
+                                    echo $row['dias'];
 
                                     $diasPagados = $diasTrabajados;
 
@@ -149,20 +178,25 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
 
                                     $starDate = new Datetime($from);
                                     $endDate = new Datetime($to);
+                                    $diferenciadias = $starDate->diff($endDate);
+                                    $diasdediferencia = $diferenciadias->days;
+
 
                                     $SueldoApagar = 0;
                                     $pagoPorHoras = 0;
 
-
+                                    $contandoDias = 0;
                                     /* NUEVO CÓDIGO PARA OBTENER EL SUELDO POR SUS HORAS TRABAJADAS */
                                     while ($starDate <= $endDate) {
 
+                                        $contandoDias = $contandoDias + 1;
+                                        // echo $contandoDias;
                                         /*- Primero vamos a Buscar su horario. */
                                         $search = $starDate->format('l');
                                         $searchAttendanceday =  $starDate->format('Y-m-d');
 
                                         // echo 'emp: ' .$empid.' weekSchedule: '.$search.' attendanceDay: '. $searchAttendanceday. 'sueld: '. $ganancia['rate']. '<br>';
-                                        $searchSchedule = "SELECT * FROM weekschedules WHERE date_work = '$search' and employee_id = '$empid' LIMIT 1";
+                                        $searchSchedule = "SELECT * FROM weekschedules WHERE date_work = '$search' and employee_id = '$empid' ORDER BY id ASC LIMIT 1 ";
                                         $horarioTrabajadoPorDia = $conn->query($searchSchedule);
 
                                         $arrayDelDia = $horarioTrabajadoPorDia->fetch_assoc();
@@ -176,89 +210,155 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                                         if ($attendanceDay->num_rows > 0) {
 
                                             $arrayDelDiaAttendance = $attendanceDay->fetch_assoc();
+
                                             if ($arrayDelDiaAttendance['num_hr'] > 0 && $arrayDelDiaAttendance['status'] > 0) {
 
                                                 /* Calculo de sueldo completo ahora vamos a calcular si trabajo un descanso o domingo o lunes.*/
-                                                /* comparamos si su d{ia de trabajo es mayor o igual a las horas que trabajo, si es así se paga normal.*/
+
+                                                /* comparamos si su día de trabajo es mayor o igual a las horas que trabajo, si es así se paga normal.*/
 
                                                 if ( $arrayDelDia['hours']  <= $arrayDelDiaAttendance['num_hr'] && $arrayDelDia['hours'] > 0 ) {
+
                                                     /* comprobamos si trabajo un día feriado :v*/
                                                     if ($arrayDelDiaAttendance['feriadotrabajado'] == 1 && $arrayDelDiaAttendance['num_hr'] >= 4) {
-                                                        $SueldoApagar = $SueldoApagar + ($ganancia['rate']*2);
+                                                        $SueldoApagar = $SueldoApagar + ($ganancia['rate'] * 2);
+
 
                                                     } else {
+
                                                         $SueldoApagar = $SueldoApagar + $ganancia['rate'];
+
                                                     }
+
+
 
                                                     // echo 'requreido: '. $arrayDelDia['hours'] .' pagos normales, jornada completa'. ' día: ' . $search . ' horas: '.$arrayDelDiaAttendance['num_hr']. '<br>';
                                                     /* Pero si es mayor a Cero quiere decir que tiene un horario menor a lo trabajado. */
 
                                                 } elseif ($arrayDelDia['hours'] > $arrayDelDiaAttendance['num_hr'] && $arrayDelDia['hours'] > 0) {
 
+                                                    // echo 'requreido: '. $arrayDelDia['hours'] .' pagos normales, jornada completa'. ' día: ' . $search . ' horas: '.$arrayDelDiaAttendance['num_hr']. '<br>';
+
                                                     /* comprobamos si trabajo un día feriado :v*/
                                                     if ($arrayDelDiaAttendance['feriadotrabajado'] == 1) {
+
                                                         $pagoPorHoras = (($ganancia['rate'] * 2) / $arrayDelDia['hours']) * $arrayDelDiaAttendance['num_hr'] ;
                                                         $SueldoApagar = $SueldoApagar + $pagoPorHoras;
+
+
 
                                                     }else{
                                                         $pagoPorHoras = ($ganancia['rate'] / $arrayDelDia['hours']) * $arrayDelDiaAttendance['num_hr'] ;
                                                         $SueldoApagar = $SueldoApagar + $pagoPorHoras;
+
+
                                                     }
 
-                                                    // echo $arrayDelDia['hours'] . ' trabajadas: '. $arrayDelDiaAttendance['num_hr']. '<br>';
+
+
                                                     /* Pero si su horario de trabajo es cero es porque descansará pero si hay valor en attendance quiere decir que trabajo su día.*/
                                                 }elseif ($arrayDelDia['hours'] == 0 && $arrayDelDiaAttendance['num_hr'] >= 4) {
 
                                                     // echo 'Trabaje en mi descanso el día: ' . $search. 'fecha: ' . $starDate->format('Y-m-d'). '<br>';
+
                                                     /* entonces su sueldo se duplica. */
                                                     if ($arrayDelDiaAttendance['feriadotrabajado'] == 1) {
+
+
                                                         $SueldoApagar = $SueldoApagar + ($ganancia['rate'] * 2);
+                                                        // echo 'se me paga doble prros';
                                                         // $pagoPorHoras = (($ganancia['rate'] * 3) / 4) * $arrayDelDiaAttendance['num_hr'];
                                                         // $SueldoApagar = $SueldoApagar + $pagoPorHoras;
                                                         // echo 'pago  doble por trabajar descanso  + el pago feriado';
+                                                        $diasTrabajados = $diasTrabajados + 1;
+
 
                                                     }else  {
-                                                        $SueldoApagar = $SueldoApagar + ($ganancia['rate']);
+                                                        $SueldoApagar = $SueldoApagar + $ganancia['rate'];
+                                                        $diasTrabajados = $diasTrabajados + 1;
+                                                        $diasPagados =  $diasTrabajados;
+
+                                                        // $diasTrabajados + 1;
                                                         // $SueldoApagar = $SueldoApagar + ($ganancia['rate'] * 2);
                                                         // echo "Pago doble por trabajar en descanso: ' . $search. 'fecha: '" . $starDate->format('Y-m-d');
+
+
                                                     }
 
 
-                                                }elseif ($arrayDelDia['hours'] == 0 && $arrayDelDiaAttendance['num_hr'] < 4 && $arrayDelDiaAttendance['num_hr'] > 0) {
 
-                                                    // echo 'Trabaje en mi descanso el día: ' . $search. 'fecha: ' . $starDate->format('Y-m-d'). '<br>';
+                                                }
+
+                                                elseif ($arrayDelDia['hours'] == 0 && $arrayDelDiaAttendance['num_hr'] < 4 && $arrayDelDiaAttendance['num_hr'] > 0) {
+
+                                                    // echo 'pago  doble por trabajar descanso  + el pago feriado' . $empid;
+
+                                                    // echo 'Este es mi descanso pero trabaje 4 hrs';
                                                     /* entonces su sueldo se duplica. */
                                                     if ($arrayDelDiaAttendance['feriadotrabajado'] == 1) {
 
-                                                        $pagoPorHoras = (($ganancia['rate'] * 3) / 8) * $arrayDelDiaAttendance['num_hr'];
+                                                        $pagoPorHoras = (($ganancia['rate'] * 2) / 8) * $arrayDelDiaAttendance['num_hr'];
                                                         $SueldoApagar = $SueldoApagar + $pagoPorHoras;
-                                                        // echo 'pago  doble por trabajar descanso  + el pago feriado';
+                                                        $diasTrabajados = $diasTrabajados + 1;
+                                                        $diasPagados =  $diasTrabajados;
+
+
 
                                                     }else if($arrayDelDia['hours'] == 0 && $arrayDelDiaAttendance['num_hr'] < 4 && $arrayDelDiaAttendance['num_hr'] > 0) {
 
-
+                                                        $diasTrabajados = $diasTrabajados + 1;
                                                         $pagoPorHoras = (($ganancia['rate'] * 2) / 8) * $arrayDelDiaAttendance['num_hr'];
                                                         $SueldoApagar = $SueldoApagar + $pagoPorHoras;
+                                                        $diasTrabajados = $diasTrabajados + 1;
+                                                        $diasPagados =  $diasTrabajados;
 
+                                                        // echo 'Trabaje en mi descanso el día: ' . $search. 'fecha: ' . $starDate->format('Y-m-d'). '<br>';
                                                         // echo "Pago doble por trabajar en descanso: ' . $search. 'fecha: '" . $starDate->format('Y-m-d');
                                                     }else {
+                                                        $diasTrabajados = $diasTrabajados + 1;
                                                         $SueldoApagar = $SueldoApagar + ($ganancia['rate'] * 2);
+
+                                                        // echo 'este es mi descanso ' .$search;
+
+
                                                     }
                                                 }
 
                                                 elseif ($arrayDelDia['hours'] == 0) {
+
                                                     /* sino se paga su descanso normal como debe de ser.*/
                                                     $SueldoApagar = $SueldoApagar + $ganancia['rate'];
+                                                    $diasTrabajados = $diasTrabajados + 1;
+                                                    $diasPagados =  $diasTrabajados;
 
                                                 }else {
 
                                                     /* pero si no es mayor a las horas trabajadas quiere decir que no cumplio su horario completo. */
                                                     $pagoPorHoras = ($ganancia['rate'] / $arrayDelDia['hours']) * $arrayDelDiaAttendance['num_hr'] ;
                                                     $SueldoApagar = $SueldoApagar + $pagoPorHoras;
+
+
                                                 }
+
+
                                             } else {
+
                                                 $diasTrabajados = $diasTrabajados - 1;
                                                 $diasPagados =  $diasTrabajados;
+                                            }
+
+                                        }else {
+                                            /* Este else es para comprobar si tengo horario cero en mi descanso, si es cero es porque descanso y se me paga normalmente. */
+
+                                            if ($arrayDelDia['hours'] == 0) {
+
+                                                /* sino se paga su descanso normal como debe de ser.*/
+                                                $SueldoApagar = $SueldoApagar + $ganancia['rate'];
+                                                $diasTrabajados = $diasTrabajados + 1;
+                                                $diasPagados =  $diasTrabajados;
+
+                                            }else{
+                                                // $diasTrabajados = $diasTrabajados - 1;
                                             }
 
                                         }
@@ -274,10 +374,13 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                                         $starDate->modify("+1 days");
                                     }
 
-                                    /* Buscamos el tipo de AFP al que pertenece para obtener sus deducciones.*/
-                                    $descuentos = "SELECT * from employees  LEFT JOIN afp on afp.id = employees.afp_id LEFT JOIN descuentos_sbs on descuentos_sbs.afp_id = afp.id  WHERE employees.id = '$empid'";
+                                    /* NUEVO QUERY PARA EL CALCULO DE LOS DESCUENTOS POR TIPO DE AFP */
+
+                                    $descuentos = "SELECT * from afp_employee WHERE employee_id = '$empid'";
 
                                     $datosDescuentos = $conn->query($descuentos);
+
+
                                     $comisionFija = 0;
                                     $comisionSobreFlujo = 0;
                                     $comisionSobreFlujoMixta = 0;
@@ -285,37 +388,119 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                                     $primaSeguros = 0;
                                     $aporteFondoPensiones = 0;
 
-                                    if ($datosDescuentos->num_rows > 0 ) {
-                                        while ($totalDescuentos = $datosDescuentos->fetch_assoc()) {
+
+                                    // echo $diasdediferencia;
+                                    if (!empty($datosDescuentos)) {
+                                        if ($datosDescuentos->num_rows > 0 ) {
+
+                                            while ($totalDescuentos = $datosDescuentos->fetch_assoc()) {
 
 
-                                            if ($totalDescuentos['slug'] == 'comision_fija' && $totalDescuentos['percentage'] > 0) {
-                                                $comisionFija = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
-                                            }
+                                                /* Esto es para ver si esta consultando por quincena o por 30 días para hacer pruebas.!*/
+                                                if ($diasdediferencia <= 15) {
 
-                                            if ($totalDescuentos['slug'] == 'comision_sobre_flujo' && $totalDescuentos['percentage'] > 0) {
-                                                $comisionSobreFlujo = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
-                                            }
+                                                    // if ($totalDescuentos['slug'] == 'comision_fija' && $totalDescuentos['percentage'] > 0) {
+                                                    //     $comisionFija = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
+                                                    // }
 
-                                            if ($totalDescuentos['slug'] == 'comision_sobre_flujo_mixta' && $totalDescuentos['percentage'] > 0) {
-                                                $comisionSobreFlujoMixta = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
-                                            }
+                                                    if ($totalDescuentos['slug'] == 'comision_sobre_flujo' && $totalDescuentos['percentage'] > 0) {
+                                                        $comisionSobreFlujo = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
+                                                    }
 
-                                            if ($totalDescuentos['slug'] == 'comision_anual_sobre_saldo' && $totalDescuentos['percentage'] > 0) {
-                                                $comisionAnualSobreSaldo = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
-                                            }
+                                                    if ($totalDescuentos['slug'] == 'comision_sobre_flujo_mixta' && $totalDescuentos['percentage'] > 0) {
+                                                        $comisionSobreFlujoMixta = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
+                                                    }
 
-                                            if ($totalDescuentos['slug'] == 'prima_seguros' && $totalDescuentos['percentage'] > 0) {
-                                                $primaSeguros = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
-                                            }
+                                                    if ($totalDescuentos['slug'] == 'comision_anual_sobre_saldo' && $totalDescuentos['percentage'] > 0) {
+                                                        $comisionAnualSobreSaldo = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
+                                                    }
 
-                                            if ($totalDescuentos['slug'] == 'aporte_fondo_pensiones' && $totalDescuentos['percentage'] > 0) {
-                                                $aporteFondoPensiones = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
+                                                    if ($totalDescuentos['slug'] == 'prima_seguros' && $totalDescuentos['percentage'] > 0) {
+                                                        $primaSeguros = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
+                                                    }
+
+                                                    if ($totalDescuentos['slug'] == 'aporte_fondo_pensiones' && $totalDescuentos['percentage'] > 0) {
+                                                        $aporteFondoPensiones = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
+                                                    }
+
+                                                } else {
+
+                                                    // if ($totalDescuentos['slug'] == 'comision_fija' && $totalDescuentos['percentage'] > 0) {
+                                                    //     $comisionFija = ($SueldoApagar / 100) * ($totalDescuentos['percentage']);
+                                                    // }
+
+                                                    if ($totalDescuentos['slug'] == 'comision_sobre_flujo' && $totalDescuentos['percentage'] > 0) {
+                                                        $comisionSobreFlujo = ($SueldoApagar / 100) * ($totalDescuentos['percentage']);
+                                                    }
+
+                                                    if ($totalDescuentos['slug'] == 'comision_sobre_flujo_mixta' && $totalDescuentos['percentage'] > 0) {
+                                                        $comisionSobreFlujoMixta = ($SueldoApagar / 100) * ($totalDescuentos['percentage']);
+                                                    }
+
+                                                    if ($totalDescuentos['slug'] == 'comision_anual_sobre_saldo' && $totalDescuentos['percentage'] > 0) {
+                                                        $comisionAnualSobreSaldo = ($SueldoApagar / 100) * ($totalDescuentos['percentage']);
+                                                    }
+
+                                                    if ($totalDescuentos['slug'] == 'prima_seguros' && $totalDescuentos['percentage'] > 0) {
+                                                        $primaSeguros = ($SueldoApagar / 100) * ($totalDescuentos['percentage']);
+                                                    }
+
+                                                    if ($totalDescuentos['slug'] == 'aporte_fondo_pensiones' && $totalDescuentos['percentage'] > 0) {
+                                                        $aporteFondoPensiones = ($SueldoApagar / 100) * ($totalDescuentos['percentage']);
+                                                    }
+                                                }
+
                                             }
 
                                         }
 
                                     }
+
+
+                                    /* ESTE QUERY SE VA A CANCELAR PERO LO DEJARE COMENTADO:*/
+
+                                    /* Buscamos el tipo de AFP al que pertenece para obtener sus deducciones.*/
+                                    // $descuentos = "SELECT * from employees  LEFT JOIN afp on afp.id = employees.afp_id LEFT JOIN descuentos_sbs on descuentos_sbs.afp_id = afp.id  WHERE employees.id = '$empid'";
+
+                                    // $datosDescuentos = $conn->query($descuentos);
+                                    // $comisionFija = 0;
+                                    // $comisionSobreFlujo = 0;
+                                    // $comisionSobreFlujoMixta = 0;
+                                    // $comisionAnualSobreSaldo = 0;
+                                    // $primaSeguros = 0;
+                                    // $aporteFondoPensiones = 0;
+
+                                    // if ($datosDescuentos->num_rows > 0 ) {
+                                    //     while ($totalDescuentos = $datosDescuentos->fetch_assoc()) {
+
+
+                                    //         if ($totalDescuentos['slug'] == 'comision_fija' && $totalDescuentos['percentage'] > 0) {
+                                    //             $comisionFija = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
+                                    //         }
+
+                                    //         if ($totalDescuentos['slug'] == 'comision_sobre_flujo' && $totalDescuentos['percentage'] > 0) {
+                                    //             $comisionSobreFlujo = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
+                                    //         }
+
+                                    //         if ($totalDescuentos['slug'] == 'comision_sobre_flujo_mixta' && $totalDescuentos['percentage'] > 0) {
+                                    //             $comisionSobreFlujoMixta = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
+                                    //         }
+
+                                    //         if ($totalDescuentos['slug'] == 'comision_anual_sobre_saldo' && $totalDescuentos['percentage'] > 0) {
+                                    //             $comisionAnualSobreSaldo = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
+                                    //         }
+
+                                    //         if ($totalDescuentos['slug'] == 'prima_seguros' && $totalDescuentos['percentage'] > 0) {
+                                    //             $primaSeguros = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
+                                    //         }
+
+                                    //         if ($totalDescuentos['slug'] == 'aporte_fondo_pensiones' && $totalDescuentos['percentage'] > 0) {
+                                    //             $aporteFondoPensiones = ($SueldoApagar / 100) * ($totalDescuentos['percentage'] / 2);
+                                    //         }
+
+                                    //     }
+
+                                    // }
 
 
 
@@ -432,19 +617,30 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
                                     $TotalDeducciones =  $comisionFija + $comisionSobreFlujo + $comisionSobreFlujoMixta +  $comisionAnualSobreSaldo + $primaSeguros                + $aporteFondoPensiones ;
 
                                     echo "
-                        <tr>
-                          <td>".$row['lastname'].", ".$row['firstname']."</td>
-                          <td>".$row['employee_id']."</td>
-                          <td>".number_format($TotalDeducciones, 2)."</td>
-                          <td>".number_format($deduction, 2)."</td>
-                          <td>".number_format($cashadvance, 2)."</td>
-                          <td>".$diasTrabajados."</td>
-                          <td>".$diasPagados."</td>
-                          <td>".$row['total_hr']."</td>                          
-                          <td>".number_format($totalAPagarExtra, 2)."</td>
-                          <td>".number_format($net - $TotalDeducciones, 2)."</td>
-                        </tr>
-                      ";
+                                        <tr>
+                                          <td>".$row['lastname'].", ".$row['firstname']."</td>
+                                          <td>".$row['employee_id']."</td>
+                                          <td>".number_format($TotalDeducciones, 2)."</td>
+                                          <td>".number_format($deduction, 2)."</td>
+                                          <td>".number_format($cashadvance, 2)."</td>
+                                          <td>".$diasTrabajados."</td>
+                                          <td>".$diasPagados."</td>
+                                          <td>".$row['total_hr']."</td>
+                                          <td>".number_format($totalAPagarExtra, 2)."</td>
+                                          <td>".number_format($net - $TotalDeducciones, 2)."</td>
+                                        </tr>
+                                    ";
+                                    // $SueldoApagar = 0;
+                                    // $net = 0;
+                                    // $comisionSobreFlujoMixta = 0;
+                                    // $comisionSobreFlujo = 0;
+                                    // $comisionAnualSobreSaldo = 0;
+                                    // $primaSeguros = 0;
+                                    // $aporteFondoPensiones = 0;
+                                    // $deduction = 0;
+                                    // $cashadvance = 0;
+                                    // $diasTrabajados = 0;
+                                    // $diasPagados = 0;
                                 }
 
                                 ?>
@@ -518,8 +714,15 @@ $range_from = date('m/d/Y', strtotime('-30 day', strtotime($range_to)));
         });
 
         $("#reservation").on('change', function(){
+
             var range = encodeURI($(this).val());
-            window.location = 'payroll.php?range='+range;
+            var empresa = $('#empresa').val();
+            if (empresa) {
+                window.location = 'payroll.php?range='+range+'&empresa='+empresa;
+            }else {
+                window.location = 'payroll.php?range='+range;
+            }
+
         });
 
         $('#payroll').click(function(e){

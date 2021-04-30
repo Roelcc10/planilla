@@ -15,6 +15,7 @@ if(isset($_POST['add'])){
     // $schedule = $_POST['schedule'];
     $afp = $_POST['afp'];
     $filename = $_FILES['photo']['name'];
+    $tipo_comision = $_POST['tipo_comision'];
 
     if(!empty($filename)){
         move_uploaded_file($_FILES['photo']['tmp_name'], '../images/'.$filename);
@@ -40,10 +41,10 @@ if(isset($_POST['add'])){
 
         $employeeNew = "SELECT  id FROM employees order by id DESC LIMIT 1";
         $employeNew = $conn->query($employeeNew);
-        $employeId = $employeNew->fetch_assoc();
+        $employeee = $employeNew->fetch_assoc();
 
         // var_dump(intval($employeId['id']));
-        $employeId = intval($employeId['id']);
+        $employeId = intval($employeee['id']);
 
         for ($i=0; $i <= count($_POST['Horario'])-1; $i++) {
             $explode = explode('-', $_POST['Horario'][$i]);
@@ -65,6 +66,83 @@ if(isset($_POST['add'])){
                 $_SESSION['success'] = 'Employee updated successfully';
             }else {
                 $_SESSION['error'] = $conn->error;
+            }
+
+        }
+
+        /* Actualización de AFP*/
+        $afp_query = "SELECT * from afp_employee WHERE employee_id = '$employeId'";
+        $afpquery = $conn->query($afp_query);
+
+
+        if ($afpquery->num_rows > 0) {
+            /* es mejor borrar y volver agregar, no será mucho recurso el que se tomara al realizar esta operación.
+                así no buscamos para hacer updates simplemente agregamos nuevamente y ya, más fácil.
+            */
+
+            $deleteafp = "DELETE FROM afp_employee where employee_id = '$employeId'";
+            $conn->query($deleteafp);
+
+            /* necestio saber el tipo de comisión que se tomara en cuenta. */
+            $comision = "SELECT * FROM descuentos_sbs WHERE id = '$tipo_comision'";
+            $tipocomision = $conn->query($comision);
+
+            /* Obtenemos las comisiones adicionales. para guardarlas en una sola tabla. */
+            $adicionales = "SELECT * FROM descuentos_sbs WHERE afp_id = '$afp' and status = 0";
+            $comisionadicional = $conn->query($adicionales);
+
+
+            $comision = $tipocomision->fetch_assoc();
+
+            $micomision = $comision['slug'];
+            $percentage = $comision['percentage'];
+            $miafp = $comision['afp_id'];
+
+
+            $insertafp = "INSERT INTO afp_employee  (slug, percentage, afp_id, employee_id) VALUES ('$micomision', '$percentage', '$miafp', '$employeId')";
+            $conn->query($insertafp);
+
+
+            while ($agregarcomision = $comisionadicional->fetch_assoc()) {
+                $micomision = $agregarcomision['slug'];
+                $percentage = $agregarcomision['percentage'];
+
+                $miafp = $agregarcomision['afp_id'];
+
+                $insertafp = "INSERT INTO afp_employee  (slug, percentage, afp_id, employee_id) VALUES ('$micomision', '$percentage', '$miafp', '$employeId')";
+                $conn->query($insertafp);
+            }
+
+
+        }else{
+
+            /* necestio saber el tipo de comisión que se tomara en cuenta. */
+            $comision = "SELECT * FROM descuentos_sbs WHERE id = '$tipo_comision'";
+            $tipocomision = $conn->query($comision);
+
+            /* Obtenemos las comisiones adicionales. para guardarlas en una sola tabla. */
+            $adicionales = "SELECT * FROM descuentos_sbs WHERE afp_id = '$afp' and status = 0";
+            $comisionadicional = $conn->query($adicionales);
+
+            $comision = $tipocomision->fetch_assoc();
+
+            $micomision = $comision['slug'];
+            $percentage = $comision['percentage'];
+            $miafp = $comision['afp_id'];
+
+
+            $insertafp = "INSERT INTO afp_employee  (slug, percentage, afp_id, employee_id) VALUES ('$micomision', '$percentage', '$miafp', '$employeId')";
+            $conn->query($insertafp);
+
+
+            while ($agregarcomision = $comisionadicional->fetch_assoc()) {
+                $micomision = $agregarcomision['slug'];
+                $percentage = $agregarcomision['percentage'];
+
+                $miafp = $agregarcomision['afp_id'];
+
+                $insertafp = "INSERT INTO afp_employee  (slug, percentage, afp_id, employee_id) VALUES ('$micomision', '$percentage', '$miafp', '$employeId')";
+                $conn->query($insertafp);
             }
 
         }
